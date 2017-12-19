@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
+    <title>延迟加载案例</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        
+        ul {
+            list-style: none;
+            padding: 10px;
+        }
+        
+        ul li {
+            position: relative;
+            height: 60px;
+            padding: 10px;
+            border-bottom: 1px #ccc dashed;
+        }
+        
+        li>div:nth-child(1) {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 60px;
+            height: 60px;
+            background: url(images/default.jpg) no-repeat center center;
+            background-size: cover;
+        }
+        
+        li>div:nth-child(1) img {
+            display: none;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+        }
+        
+        li>div:last-child {
+            height: 60px;
+            margin-left: 70px;
+            overflow: hidden;
+            box-sizing: border-box;
+            padding: 5px;
+        }
+        
+        li>div:last-child h2 {
+            line-height: 20px;
+            font-size: 15px;
+            /*标题省略号*/
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        li>div:last-child p {
+            font-size: 12px;
+            color: gray;
+        }
+    </style>
+</head>
+
+<body>
+    <ul id="newsList">
+    </ul>
+
+    <script src="utils.js"></script>
+    <script>
+        //1、获取json格式数据
+        var jsonData = null;
+        var targetUl = document.getElementById("newsList");
+        var imgList = targetUl.getElementsByTagName("img");
+        ~ function() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('get', 'jsonData.txt', false);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    jsonData = utils.jsonParse(xhr.responseText);
+                }
+            }
+            xhr.send();
+        }();
+
+        //2、绑定数据
+        ~ function() {
+            if (jsonData) { //判断数据是否获取成功
+                var frg = document.createDocumentFragment();
+                for (var i = 0; i < jsonData.length; i++) {
+                    var curData = jsonData[i];
+                    var curLi = document.createElement("li");
+                    curLi.innerHTML = '<div><img src="" trueSrc="' + curData.img + '" /></div>' + '<div><h2>' + curData.title + '</h2><p>' + curData.desc + '</p></div>';
+                    frg.appendChild(curLi);
+                }
+                targetUl.appendChild(frg);
+                frg = null;
+            }
+        }();
+
+        //3、图片延迟加载
+        function imgDelayLoad(curImg) {
+            if (curImg.isLoad) {
+                return;
+            }
+            var tempImg = new Image();
+            tempImg.src = curImg.getAttribute('trueSrc');
+            tempImg.onload = function() {
+                curImg.src = this.src;
+                curImg.style.display = "block";
+                tempImg = null;
+            }
+            curImg.isLoad = true;
+        }
+
+        //4、获取所有的图片
+        function fetchAllImg() {
+            for (var i = 0; i < imgList.length; i++) {
+                var curImg = imgList[i];
+                screenLeft
+                if (curImg.isLoad) continue;
+                var browerBottomDisBodyTop = utils.getWin('clientHeight') + utils.getWin('scrollTop'); //浏览器底部距离body顶端
+                var imgParentBottomDisBodyTop = utils.offset(curImg.parentNode).top + curImg.parentNode.offsetHeight; //图片父亲容器底部距离body顶端
+                if (browerBottomDisBodyTop > imgParentBottomDisBodyTop) { //判断这个图片是否已经出现在了浏览器的可视窗口内, 我们要判断img这个图片的parentNode
+                    imgDelayLoad(curImg); //分别多次调用单个图片延迟加载
+                    fadeIn(curImg); //淡入的方式
+                }
+            }
+        }
+
+        //图片淡入
+        function fadeIn(curImg) {
+            var duration = 200;
+            var target = 1;
+            var interval = 10;
+            var step = (target / duration) * interval;
+            var timer = window.setInterval(function() {
+                if (curOpacity >= target) {
+                    window.clearInterval(timer);
+                    //赋值终点的动作 把target的值赋值给当前元素的样式
+                    return;
+                }
+                var curOpacity = utils.getCss(curImg, 'opacity');
+                curOpacity += step;
+                curImg.style.opacity = curOpacity;
+            }, interval);
+        }
+
+        window.setTimeout(fetchAllImg, 1000);
+        window.onscroll = fetchAllImg;
+    </script>
+</body>
+
+</html>
